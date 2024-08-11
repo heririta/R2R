@@ -1,6 +1,6 @@
 import os
 from litellm import embedding
-os.environ["COHERE_API_KEY"] = "edu0YGrVajstvkGOoKvPsG6LV1wcHnBvYB1jLGMX"
+os.environ["COHERE_API_KEY"] = ""
 
 # cohere call
 response = embedding(
