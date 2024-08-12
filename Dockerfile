@@ -31,10 +31,13 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
+# <<<NEW LINE ADDED>>>
+RUN pip install sentence-transformers && pip install einops
+
 # Copy the application and config
 COPY r2r /app/r2r
 COPY r2r.toml /app/r2r.toml
-COPY pyproject.toml /app/pyproject.toml
+COPY config.json /app/config.json
 
 # Expose the port
 ARG PORT=8000

@@ -1,4 +1,11 @@
-version: "3.8"
+x-depends-on:
+  neo4j: &neo4j-dependency
+    condition: service_healthy
+  ollama: &ollama-dependency
+    condition: service_healthy
+  postgres: &postgres-dependency
+    condition: service_healthy
+
 networks:
   r2r-network:
     name: r2r-network
@@ -12,34 +19,8 @@ networks:
       - "com.docker.compose.recreate=always"
 
 services:
-  neo4j:
-    image: neo4j:5.21.0
-    ports:
-      - "7474:7474" # HTTP
-      - "7687:7687" # Bolt
-    environment:
-      - NEO4J_AUTH=${NEO4J_AUTH:-neo4j/ineedastrongerpassword}
-      - NEO4J_dbms_memory_pagecache_size=${NEO4J_PAGECACHE_SIZE:-512M}
-      - NEO4J_dbms_memory_heap_max__size=${NEO4J_HEAP_SIZE:-512M}
-      - NEO4J_apoc_export_file_enabled=true
-      - NEO4J_apoc_import_file_enabled=true
-      - NEO4J_apoc_import_file_use__neo4j__config=true
-      - NEO4JLABS_PLUGINS=["apoc"]
-      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
-      - NEO4J_dbms_security_procedures_allowlist=apoc.*
-    volumes:
-      - neo4j_data:/data
-      - neo4j_logs:/logs
-      - neo4j_plugins:/plugins
-    networks:
-      - r2r-network
-    healthcheck:
-      test: ["CMD", "neo4j", "status"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
   r2r:
-    image: r2r:v1
+    image: ${R2R_IMAGE:-emrgntcmplxty/r2r:main}
     build:
       context: .
       args:
@@ -99,8 +80,7 @@ services:
       - ANYSCALE_API_KEY=${ANYSCALE_API_KEY:-}
 
       # Ollama
-      #- OLLAMA_API_BASE=${OLLAMA_API_BASE:-http://host.docker.internal:11434}
-      - OLLAMA_API_BASE=${OLLAMA_API_BASE:-http://192.168.122.152:11434}
+      - OLLAMA_API_BASE=${OLLAMA_API_BASE:-http://host.docker.internal:11434}
     networks:
       - r2r-network
     healthcheck:
@@ -124,23 +104,6 @@ services:
       - "traefik.http.middlewares.r2r-headers.headers.customresponseheaders.Access-Control-Expose-Headers=Content-Length,Content-Range"
     extra_hosts:
       - host.docker.internal:host-gateway
-
-  postgres:
-    image: pgvector/pgvector:pg16
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DBNAME:-postgres}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - r2r-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: on-failure
 
   r2r-dashboard:
     image: emrgntcmplxty/r2r-dashboard:latest
